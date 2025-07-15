@@ -1,15 +1,19 @@
 package com.ruoyi.file.service;
 
-import com.ruoyi.file.utils.FileUploadUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.ruoyi.common.core.utils.StringUtils;
+import com.ruoyi.common.core.utils.file.FileUtils;
+import com.ruoyi.file.utils.FileUploadUtils;
 
 /**
  * 本地文件存储
  * 
  * @author ruoyi
  */
+@Primary
 @Service
 public class LocalSysFileServiceImpl implements ISysFileService
 {
@@ -44,5 +48,18 @@ public class LocalSysFileServiceImpl implements ISysFileService
         String name = FileUploadUtils.upload(localFilePath, file);
         String url = domain + localFilePrefix + name;
         return url;
+    }
+
+    /**
+     * 本地文件删除接口
+     * 
+     * @param fileUrl 文件访问URL
+     * @throws Exception
+     */
+    @Override
+    public void deleteFile(String fileUrl) throws Exception
+    {
+        String localFile = StringUtils.substringAfter(fileUrl, localFilePrefix);
+        FileUtils.deleteFile(localFilePath + localFile);
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.common.core.domain.R;
+import com.ruoyi.common.core.utils.DateUtils;
 import com.ruoyi.common.core.utils.StringUtils;
 import com.ruoyi.common.core.utils.file.FileTypeUtils;
 import com.ruoyi.common.core.utils.file.MimeTypeUtils;
@@ -99,7 +100,7 @@ public class SysProfileController extends BaseController
         String oldPassword = params.get("oldPassword");
         String newPassword = params.get("newPassword");
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        String userName = loginUser.getUsername();
+        Long userId = loginUser.getUserid();
         String password = loginUser.getSysUser().getPassword();
         if (!SecurityUtils.matchesPassword(oldPassword, password))
         {
@@ -110,9 +111,10 @@ public class SysProfileController extends BaseController
             return error("新密码不能与旧密码相同");
         }
         newPassword = SecurityUtils.encryptPassword(newPassword);
-        if (userService.resetUserPwd(userName, newPassword) > 0)
+        if (userService.resetUserPwd(userId, newPassword) > 0)
         {
-            // 更新缓存用户密码
+            // 更新缓存用户密码&密码最后更新时间
+            loginUser.getSysUser().setPwdUpdateDate(DateUtils.getNowDate());
             loginUser.getSysUser().setPassword(newPassword);
             tokenService.setLoginUser(loginUser);
             return success();
@@ -141,8 +143,13 @@ public class SysProfileController extends BaseController
                 return error("文件服务异常，请联系管理员");
             }
             String url = fileResult.getData().getUrl();
-            if (userService.updateUserAvatar(loginUser.getUsername(), url))
+            if (userService.updateUserAvatar(loginUser.getUserid(), url))
             {
+                String oldAvatarUrl = loginUser.getSysUser().getAvatar();
+                if (StringUtils.isNotEmpty(oldAvatarUrl))
+                {
+                    remoteFileService.delete(oldAvatarUrl);
+                }
                 AjaxResult ajax = AjaxResult.success();
                 ajax.put("imgUrl", url);
                 // 更新缓存用户头像
